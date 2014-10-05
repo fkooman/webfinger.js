@@ -1,37 +1,50 @@
-/*jslint browser: true, indent: 4 */
-var WebFinger = (function() {
-    "use strict";
+/* jshint browser:true, jquery:true */
+var WebFinger = function() {
+    'use strict';
 
-    return function WebFingerConstructor() {
-        this.extractDomain = function(resource) {
+    return { 
+        _extractDomain: function(resource) {
             var parsedResource = resource.match(/(\S+)@(\S+)/);
             if (null === parsedResource) {
                 // did not match regexp
-                throw "resource not valid";
+                throw {
+                    name: 'WebFingerError',
+                    message: 'resource not valid'
+                };
             }
             return parsedResource[2];
-        };
-
-        this.finger = function(resource, callback) {
-            var domain = this.extractDomain(resource),
-                webFingerUri = 'https://' + domain + '/.well-known/webfinger?resource=acct:' + resource,
+        },
+        finger: function(resource, callback) {
+            var domain = this._extractDomain(resource),
+                webFingerUri = 'https://' + 
+                    domain + 
+                    '/.well-known/webfinger?resource=acct:' + 
+                    resource,
                 httpRequest = new XMLHttpRequest();
 
             httpRequest.onreadystatechange = function() {
                 if (4 === httpRequest.readyState) {
                     if (200 === httpRequest.status) {
-                        callback(JSON.parse(httpRequest.responseText));
+                        //callback(JSON.parse(httpRequest.responseText));
+                        callback(httpRequest.responseText);
                     } else if (404 === httpRequest.status) {
-                        throw "resource not found";
+                        throw {
+                            name: 'WebFingerError',
+                            message: 'resource not found'
+                        };
                     } else {
-                        throw "there was a problem with the request";
+                        throw {
+                            name: 'WebFingerError',
+                            message: 'there was a problem with the request'
+                        };
                     }
                 }
             };
 
             httpRequest.open('GET', webFingerUri, true);
+            httpRequest.responseType = 'json';
             httpRequest.setRequestHeader('Accept', 'application/jrd+json');
             httpRequest.send();
-        };
+        }
     };
-}());
+}();
